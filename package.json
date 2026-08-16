@@ -5,13 +5,16 @@
   "description": "Transparent window overlay that shows your keyboard presses — for OBS / streaming.",
   "main": "electron/main.js",
   "scripts": {
+    "dev": "npm run build:ui && npx electron .",
     "start": "npm run build:ui && npx electron .",
     "test": "npm run build:ui && KEY_OVERLAY_TEST=1 npx electron .",
     "build:ui": "esbuild ui/main.ts --bundle --outfile=resources/js/main.js --format=iife --target=es2020 --sourcemap",
     "typecheck": "tsc --noEmit",
-    "pack": "npm run build:ui && electron-builder --dir",
-    "dist": "npm run build:ui && electron-builder",
-    "release": "npm run build:ui && electron-builder --win portable"
+    "build:win": "npm run build:ui && electron-builder --win",
+    "build:linux": "npm run build:ui && electron-builder --linux",
+    "build:win:linux": "npm run build:ui && electron-builder --win --linux",
+    "build:mac": "npm run build:ui && electron-builder --mac",
+    "build:all": "npm run build:ui && electron-builder --win --linux --mac"
   },
   "dependencies": {
     "koffi": "^3.1.5"
@@ -34,6 +37,14 @@
       "target": [
         { "target": "portable", "arch": ["x64"] }
       ]
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Utility"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.utilities"
     }
   }
 }
