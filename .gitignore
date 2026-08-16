@@ -10,3 +10,6 @@ neutralinojs.log
 .tmp
 /release
 /dist
+.env
+.env.*
+!.env.example

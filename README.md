@@ -41,14 +41,26 @@ npm test
 3. วางมุมจอตามที่ชอบ — หน้าต่าง **always-on-top** อยู่แล้ว
 4. ถ้าพื้นหลังโปร่งใสไม่เห็น (เห็นเป็นดำ) → Filter ที่ source นั้น → **+** → **Chroma Key** แล้วเลือกสีดำ
 
-## สร้าง Release (portable exe ตัวเดียว)
+## สร้าง Release
+
+**Local build (ทดสอบเอง):**
 
 ```bash
-npm run dist
+npm run build:win      # Windows portable exe → release/
+npm run build:linux    # Linux AppImage → release/
+npm run build:mac      # macOS dmg/zip (ต้องรันบน Mac)
 ```
 
-จะได้ **`release/KeyPressOverlay 1.0.0.exe`** (~90 MB) — portable exe ตัวเดียว เอาไปแจกได้เลย
-ดับเบิลคลิกแล้วใช้ได้ทันที ไม่ต้องติดตั้ง Node หรืออะไรทั้งนั้น
+**Release ลง GitHub (cloud build ผ่าน GitHub Actions):**
+
+```bash
+npm run release:win        # build + publish Windows
+npm run release:linux      # build + publish Linux
+npm run release:win:linux  # build + publish ทั้งสอง
+npm run release:all        # build + publish ทั้งหมด
+```
+
+จะ publish ลง **GitHub Releases ของ repo นี้** (tag `v<version>`) โดยอัตโนมัติ release notes ดึงจาก `CHANGELOG.md` — ดูรายละเอียดใน [RELEASE-README.md](RELEASE-README.md)
 
 ## โครงสร้างโปรเจค
 

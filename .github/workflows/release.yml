@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target platform (all, win, linux, win-linux)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - win
+          - linux
+          - win-linux
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows
+            platform: win
+            os: windows-latest
+            script: build:win
+          - name: linux
+            platform: linux
+            os: ubuntu-latest
+            script: build:linux
+
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux')) }}
+
+      - uses: actions/setup-node@v4
+        if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux')) }}
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install system dependencies (Linux)
+        if: ${{ matrix.platform == 'linux' && (github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux'))) }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 || sudo apt-get install -y libfuse2t64
+
+      - name: Install dependencies
+        if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux')) }}
+        run: npm ci
+
+      - name: Build
+        if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux')) }}
+        run: npm run ${{ matrix.script }}
+
+      - name: Publish to GitHub Release
+        if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux')) }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: node scripts/publish-github-release.mjs

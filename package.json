@@ -10,11 +10,15 @@
     "test": "npm run build:ui && KEY_OVERLAY_TEST=1 npx electron .",
     "build:ui": "esbuild ui/main.ts --bundle --outfile=resources/js/main.js --format=iife --target=es2020 --sourcemap",
     "typecheck": "tsc --noEmit",
-    "build:win": "npm run build:ui && electron-builder --win",
-    "build:linux": "npm run build:ui && electron-builder --linux",
-    "build:win:linux": "npm run build:ui && electron-builder --win --linux",
-    "build:mac": "npm run build:ui && electron-builder --mac",
-    "build:all": "npm run build:ui && electron-builder --win --linux --mac"
+    "build:win": "npm run build:ui && electron-builder --win --publish never",
+    "build:linux": "npm run build:ui && electron-builder --linux --publish never",
+    "build:win:linux": "npm run build:ui && electron-builder --win --linux --publish never",
+    "build:mac": "npm run build:ui && electron-builder --mac --publish never",
+    "build:all": "npm run build:ui && electron-builder --win --linux --mac --publish never",
+    "release:win": "node scripts/trigger-cloud-release.mjs win",
+    "release:linux": "node scripts/trigger-cloud-release.mjs linux",
+    "release:win:linux": "node scripts/trigger-cloud-release.mjs win-linux",
+    "release:all": "node scripts/trigger-cloud-release.mjs all"
   },
   "dependencies": {
     "koffi": "^3.1.5"
@@ -23,28 +27,50 @@
     "electron": "^43.4.0",
     "electron-builder": "^26.0.0",
     "esbuild": "^0.28.2",
+    "js-yaml": "^5.3.0",
     "typescript": "^5.6.0"
   },
   "build": {
     "appId": "com.keypress.overlay",
     "productName": "KeyPressOverlay",
-    "directories": { "output": "release" },
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "electron/**/*",
       "resources/**/*"
     ],
     "win": {
       "target": [
-        { "target": "portable", "arch": ["x64"] }
-      ]
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}.${ext}"
     },
     "linux": {
-      "target": ["AppImage"],
-      "category": "Utility"
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility",
+      "artifactName": "${productName}-${version}.${ext}"
     },
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "category": "public.app-category.utilities"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Nargor",
+      "repo": "keyboardpress-electron",
+      "releaseType": "release",
+      "vPrefixedTagName": true
     }
   }
 }
