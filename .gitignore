@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.storage/
+*.log
+neutralinojs.log
+*.tsbuildinfo
+.DS_Store
+/.freebuff
+/.cache
+.tmp
+/release
+/dist

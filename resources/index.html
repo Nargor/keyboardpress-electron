@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KeyPress Overlay</title>
+    <link rel="icon" href="favicon.ico" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Drag handle — Electron supports -webkit-app-region: drag natively -->
+      <div id="dragbar">
+        <span id="status-dot" data-state="off" title="connection status"></span>
+        <span id="title">KeyPress Overlay</span>
+        <div class="spacer"></div>
+        <button id="btn-reset" class="icon-btn" title="Reset counters">↺</button>
+        <button id="btn-close" class="icon-btn" title="Close">✕</button>
+      </div>
+
+      <!-- Recently pressed keys -->
+      <div class="section history-wrap">
+        <div id="history"></div>
+      </div>
+
+      <!-- Held modifiers -->
+      <div id="mods">
+        <span class="mod" id="shift">SHIFT</span>
+        <span class="mod" id="ctrl">CTRL</span>
+        <span class="mod" id="alt">ALT</span>
+        <span class="mod" id="win">WIN</span>
+      </div>
+
+      <!-- Session stats -->
+      <div class="stats">
+        <div class="stat"><span class="stat-label">Total</span><span id="total" class="stat-value">0</span></div>
+        <div class="stat"><span class="stat-label">Keys/s</span><span id="kps" class="stat-value">0.0</span></div>
+        <div class="stat topkeys-wrap"><span class="stat-label">Top</span><span id="topkeys" class="stat-value topkeys"></span></div>
+      </div>
+    </div>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>
