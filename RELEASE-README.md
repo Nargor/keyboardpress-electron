@@ -2,9 +2,9 @@
 
 **คู่มือการใช้งานแอปเดสก์ท็อปโชว์ปุ่มคีย์บอร์ดสำหรับไลฟ์สตรีม** — หน้าต่างโปร่งใสขนาดเล็กแสดงปุ่มที่กด เอาไปวางใน OBS / Twitch Studio ได้เลย
 
-[![Latest Release](https://img.shields.io/github/v/release/Nargor/keyboardpress-electron?label=เวอร์ชันล่าสุด&color=blue)](https://github.com/Nargor/keyboardpress-electron/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/Nargor/keyboardpress-electron/total?label=ดาวน์โหลดแล้ว&color=success)](https://github.com/Nargor/keyboardpress-electron/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](https://github.com/Nargor/keyboardpress-electron/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/Nargor/keypress-overlay-electron?label=เวอร์ชันล่าสุด&color=blue)](https://github.com/Nargor/keypress-overlay-electron/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Nargor/keypress-overlay-electron/total?label=ดาวน์โหลดแล้ว&color=success)](https://github.com/Nargor/keypress-overlay-electron/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](https://github.com/Nargor/keypress-overlay-electron/releases/latest)
 [![Author](https://img.shields.io/badge/author-%40Nargor-blueviolet)](https://github.com/Nargor)
 
 > 📦 release ไฟล์ติดตั้งทั้งหมดอยู่ที่หน้า **Releases** ของ repo นี้ — โค้ดกับตัวแจกจ่ายอยู่ในที่เดียวกัน
@@ -13,7 +13,7 @@
 
 ## ดาวน์โหลด & ติดตั้ง
 
-ไปที่หน้า **[Releases](https://github.com/Nargor/keyboardpress-electron/releases/latest)** แล้วเลือกไฟล์ให้ตรงกับเครื่องของคุณ:
+ไปที่หน้า **[Releases](https://github.com/Nargor/keypress-overlay-electron/releases/latest)** แล้วเลือกไฟล์ให้ตรงกับเครื่องของคุณ:
 
 | ระบบปฏิบัติการ | ไฟล์ที่ต้องดาวน์โหลด | วิธีใช้งาน |
 |---|---|---|

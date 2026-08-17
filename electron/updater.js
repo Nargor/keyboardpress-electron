@@ -12,7 +12,7 @@ let currentUpdateInfo = null;
 
 // GitHub repository info
 const GITHUB_OWNER = 'Nargor';
-const GITHUB_REPO = 'keyboardpress-electron';
+const GITHUB_REPO = 'keypress-overlay-electron';
 
 function parseVersion(v) {
   if (!v) return [0, 0, 0];

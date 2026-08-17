@@ -8,9 +8,9 @@ import { join } from 'node:path'
 const ROOT = process.cwd()
 const rawTarget = (process.argv[2] || 'all').toLowerCase()
 
-// Same repo as the code — the app is released into keyboardpress-electron itself.
+// Same repo as the code — the app is released into keypress-overlay-electron itself.
 const OWNER = 'Nargor'
-const REPO = 'keyboardpress-electron'
+const REPO = 'keypress-overlay-electron'
 const REF = 'main'
 
 let target = 'all'
