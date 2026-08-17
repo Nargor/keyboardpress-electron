@@ -37,6 +37,46 @@
         <div class="stat"><span class="stat-label">Keys/s</span><span id="kps" class="stat-value">0.0</span></div>
         <div class="stat topkeys-wrap"><span class="stat-label">Top</span><span id="topkeys" class="stat-value topkeys"></span></div>
       </div>
+
+      <!-- Update Notification Modal -->
+      <div id="update-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-title-wrap">
+              <span class="modal-icon">🚀</span>
+              <div>
+                <div class="modal-title">ตรวจพบเวอร์ชันใหม่!</div>
+                <div class="modal-subtitle">เวอร์ชัน <span id="update-version" class="version-badge">v0.0.0</span></div>
+              </div>
+            </div>
+            <button id="btn-update-close" class="icon-btn modal-close-btn" title="ปิด (ไว้ก่อน)">✕</button>
+          </div>
+
+          <div id="update-notes-wrap" class="modal-body">
+            <div class="notes-header">รายละเอียดการอัปเดต:</div>
+            <div id="update-notes" class="notes-content"></div>
+          </div>
+
+          <!-- Download Progress Section -->
+          <div id="update-progress-wrap" class="progress-section hidden">
+            <div class="progress-info">
+              <span id="progress-status-text">กำลังดาวน์โหลด...</span>
+              <span id="progress-percent-text">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%"></div>
+            </div>
+            <div id="progress-size-text" class="progress-size-text">0 MB / 0 MB</div>
+          </div>
+
+          <!-- Actions -->
+          <div class="modal-footer">
+            <button id="btn-update-dismiss" class="modal-btn btn-secondary">ไว้ก่อน</button>
+            <button id="btn-update-download" class="modal-btn btn-primary">อัปเดตเลย</button>
+            <button id="btn-update-restart" class="modal-btn btn-primary hidden">🔄 รีสตาร์ทเพื่ออัปเดต</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script src="js/main.js"></script>

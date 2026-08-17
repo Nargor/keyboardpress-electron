@@ -1,11 +1,3 @@
-/**
- * KeyPress Overlay — Electron renderer.
- *
- * Receives key events from the main process via contextBridge IPC
- * (window.electronAPI.onKeyEvent) and renders:
- * recent key history, held modifiers, total count, keys-per-second, top keys.
- */
-
 interface KeyEvent {
   type: 'down' | 'up';
   key: string;
@@ -13,10 +5,38 @@ interface KeyEvent {
   t: number;
 }
 
+interface UpdateInfo {
+  currentVersion: string;
+  newVersion: string;
+  tagName: string;
+  releaseNotes: string;
+  assetName: string;
+  assetSize: number;
+  downloadUrl: string;
+}
+
+interface UpdateProgress {
+  percent: number;
+  transferred: number;
+  total: number;
+}
+
+interface UpdateDownloaded {
+  version: string;
+  filePath: string;
+}
+
 type ElectronAPI = {
   onKeyEvent: (cb: (ev: KeyEvent) => void) => void;
   close: () => void;
   minimize: () => void;
+  checkForUpdate: () => void;
+  downloadUpdate: () => void;
+  installUpdate: () => void;
+  onUpdateAvailable: (cb: (info: UpdateInfo) => void) => void;
+  onUpdateProgress: (cb: (progress: UpdateProgress) => void) => void;
+  onUpdateDownloaded: (cb: (data: UpdateDownloaded) => void) => void;
+  onUpdateError: (cb: (err: { message: string }) => void) => void;
 };
 
 const MOD_CHIPS: Record<number, string> = {
@@ -50,6 +70,20 @@ const elKps = $('kps');
 const elTop = $('topkeys');
 const elStatus = $('status-dot');
 const elTitle = $('title');
+
+// Updater elements
+const elUpdateModal = $('update-modal');
+const elUpdateVersion = $('update-version');
+const elUpdateNotes = $('update-notes');
+const elUpdateProgressWrap = $('update-progress-wrap');
+const elProgressBarFill = $('progress-bar-fill');
+const elProgressPercentText = $('progress-percent-text');
+const elProgressStatusText = $('progress-status-text');
+const elProgressSizeText = $('progress-size-text');
+const elBtnUpdateDownload = $('btn-update-download') as HTMLButtonElement;
+const elBtnUpdateRestart = $('btn-update-restart') as HTMLButtonElement;
+const elBtnUpdateDismiss = $('btn-update-dismiss') as HTMLButtonElement;
+const elBtnUpdateClose = $('btn-update-close') as HTMLButtonElement;
 
 function setStatus(state: 'on' | 'connecting' | 'off') {
   elStatus.dataset.state = state;
@@ -94,7 +128,7 @@ function kps(): number {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/[&<>\"']/g, (c) =>
+  return s.replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] ?? c));
 }
 
@@ -130,8 +164,81 @@ $('btn-close').addEventListener('click', () => {
   getElectronAPI()?.close();
 });
 
-// --- Dragging (via CSS -webkit-app-region: drag) ---------------------------
-// Electron supports -webkit-app-region: drag on frameless windows natively.
+// --- Auto-Updater UI Logic ------------------------------------------------
+
+function hideUpdateModal() {
+  elUpdateModal.classList.add('hidden');
+}
+
+function setupUpdaterUI(api: ElectronAPI) {
+  // Update Available
+  api.onUpdateAvailable((info: UpdateInfo) => {
+    elUpdateVersion.textContent = info.tagName.startsWith('v') ? info.tagName : `v${info.newVersion}`;
+    elUpdateNotes.textContent = info.releaseNotes.trim() || 'มีการปรับปรุงประสิทธิภาพและแก้ไขข้อผิดพลาดทั่วไป';
+
+    // Reset view state
+    elUpdateProgressWrap.classList.add('hidden');
+    elBtnUpdateDownload.classList.remove('hidden');
+    elBtnUpdateDownload.disabled = false;
+    elBtnUpdateDownload.textContent = 'อัปเดตเลย';
+    elBtnUpdateRestart.classList.add('hidden');
+
+    // Show modal
+    elUpdateModal.classList.remove('hidden');
+  });
+
+  // Download Action
+  elBtnUpdateDownload.addEventListener('click', () => {
+    elBtnUpdateDownload.disabled = true;
+    elBtnUpdateDownload.textContent = 'กำลังดาวน์โหลด...';
+    elUpdateProgressWrap.classList.remove('hidden');
+    elProgressBarFill.style.width = '0%';
+    elProgressPercentText.textContent = '0%';
+    elProgressStatusText.textContent = 'กำลังดาวน์โหลด...';
+    elProgressSizeText.textContent = '0 MB';
+
+    api.downloadUpdate();
+  });
+
+  // Download Progress
+  api.onUpdateProgress((progress: UpdateProgress) => {
+    elProgressBarFill.style.width = `${progress.percent}%`;
+    elProgressPercentText.textContent = `${progress.percent}%`;
+    const transMB = (progress.transferred / 1024 / 1024).toFixed(1);
+    const totalMB = progress.total > 0 ? (progress.total / 1024 / 1024).toFixed(1) : '?';
+    elProgressSizeText.textContent = `${transMB} MB / ${totalMB} MB`;
+  });
+
+  // Download Complete
+  api.onUpdateDownloaded((_data: UpdateDownloaded) => {
+    elProgressBarFill.style.width = '100%';
+    elProgressPercentText.textContent = '100%';
+    elProgressStatusText.textContent = 'ดาวน์โหลดเสร็จสมบูรณ์! พร้อมติดตั้ง';
+    elBtnUpdateDownload.classList.add('hidden');
+    elBtnUpdateRestart.classList.remove('hidden');
+  });
+
+  // Restart & Install Action
+  elBtnUpdateRestart.addEventListener('click', () => {
+    elBtnUpdateRestart.disabled = true;
+    elBtnUpdateRestart.textContent = 'กำลังรีสตาร์ท...';
+    api.installUpdate();
+  });
+
+  // Dismiss ("ไว้ก่อน") buttons
+  elBtnUpdateDismiss.addEventListener('click', hideUpdateModal);
+  elBtnUpdateClose.addEventListener('click', hideUpdateModal);
+
+  // Update Error
+  api.onUpdateError((err: { message: string }) => {
+    elProgressStatusText.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
+    elBtnUpdateDownload.disabled = false;
+    elBtnUpdateDownload.textContent = 'ลองใหม่อีกครั้ง';
+  });
+
+  // Check for updates upon startup
+  api.checkForUpdate();
+}
 
 // --- Init ------------------------------------------------------------------
 
@@ -144,6 +251,7 @@ function init() {
     setStatus('on');
     elTitle.textContent = 'KeyPress Overlay';
     api.onKeyEvent(onEvent);
+    setupUpdaterUI(api);
   } else {
     // Running outside Electron (e.g. plain browser for preview)
     setStatus('off');
@@ -154,3 +262,4 @@ function init() {
 }
 
 init();
+

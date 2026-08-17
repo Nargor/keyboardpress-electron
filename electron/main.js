@@ -132,6 +132,8 @@ ipcMain.on('window-drag', (_e, { x, y }) => {
 // App lifecycle
 // ---------------------------------------------------------------------------
 
+const { setupUpdater } = require('./updater');
+
 app.whenReady().then(() => {
   // Hide the console window (if launched from a .bat or terminal)
   if (GetConsoleWindow && ShowWindow) {
@@ -140,11 +142,16 @@ app.whenReady().then(() => {
   }
 
   createWindow();
+  setupUpdater(mainWindow);
+
   if (TEST_MODE) startTestMode();
   else setInterval(pollKeys, POLL_MS);
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+      setupUpdater(mainWindow);
+    }
   });
 });
 

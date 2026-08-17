@@ -31,6 +31,18 @@
   var elTop = $("topkeys");
   var elStatus = $("status-dot");
   var elTitle = $("title");
+  var elUpdateModal = $("update-modal");
+  var elUpdateVersion = $("update-version");
+  var elUpdateNotes = $("update-notes");
+  var elUpdateProgressWrap = $("update-progress-wrap");
+  var elProgressBarFill = $("progress-bar-fill");
+  var elProgressPercentText = $("progress-percent-text");
+  var elProgressStatusText = $("progress-status-text");
+  var elProgressSizeText = $("progress-size-text");
+  var elBtnUpdateDownload = $("btn-update-download");
+  var elBtnUpdateRestart = $("btn-update-restart");
+  var elBtnUpdateDismiss = $("btn-update-dismiss");
+  var elBtnUpdateClose = $("btn-update-close");
   function setStatus(state) {
     elStatus.dataset.state = state;
   }
@@ -69,7 +81,7 @@
     return recentDowns.length;
   }
   function escapeHtml(s) {
-    return s.replace(/[&<>\"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
+    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
   }
   function onEvent(ev) {
     const chipId = MOD_CHIPS[ev.vk];
@@ -101,6 +113,58 @@
   $("btn-close").addEventListener("click", () => {
     getElectronAPI()?.close();
   });
+  function hideUpdateModal() {
+    elUpdateModal.classList.add("hidden");
+  }
+  function setupUpdaterUI(api) {
+    api.onUpdateAvailable((info) => {
+      elUpdateVersion.textContent = info.tagName.startsWith("v") ? info.tagName : `v${info.newVersion}`;
+      elUpdateNotes.textContent = info.releaseNotes.trim() || "\u0E21\u0E35\u0E01\u0E32\u0E23\u0E1B\u0E23\u0E31\u0E1A\u0E1B\u0E23\u0E38\u0E07\u0E1B\u0E23\u0E30\u0E2A\u0E34\u0E17\u0E18\u0E34\u0E20\u0E32\u0E1E\u0E41\u0E25\u0E30\u0E41\u0E01\u0E49\u0E44\u0E02\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E17\u0E31\u0E48\u0E27\u0E44\u0E1B";
+      elUpdateProgressWrap.classList.add("hidden");
+      elBtnUpdateDownload.classList.remove("hidden");
+      elBtnUpdateDownload.disabled = false;
+      elBtnUpdateDownload.textContent = "\u0E2D\u0E31\u0E1B\u0E40\u0E14\u0E15\u0E40\u0E25\u0E22";
+      elBtnUpdateRestart.classList.add("hidden");
+      elUpdateModal.classList.remove("hidden");
+    });
+    elBtnUpdateDownload.addEventListener("click", () => {
+      elBtnUpdateDownload.disabled = true;
+      elBtnUpdateDownload.textContent = "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E14\u0E32\u0E27\u0E19\u0E4C\u0E42\u0E2B\u0E25\u0E14...";
+      elUpdateProgressWrap.classList.remove("hidden");
+      elProgressBarFill.style.width = "0%";
+      elProgressPercentText.textContent = "0%";
+      elProgressStatusText.textContent = "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E14\u0E32\u0E27\u0E19\u0E4C\u0E42\u0E2B\u0E25\u0E14...";
+      elProgressSizeText.textContent = "0 MB";
+      api.downloadUpdate();
+    });
+    api.onUpdateProgress((progress) => {
+      elProgressBarFill.style.width = `${progress.percent}%`;
+      elProgressPercentText.textContent = `${progress.percent}%`;
+      const transMB = (progress.transferred / 1024 / 1024).toFixed(1);
+      const totalMB = progress.total > 0 ? (progress.total / 1024 / 1024).toFixed(1) : "?";
+      elProgressSizeText.textContent = `${transMB} MB / ${totalMB} MB`;
+    });
+    api.onUpdateDownloaded((_data) => {
+      elProgressBarFill.style.width = "100%";
+      elProgressPercentText.textContent = "100%";
+      elProgressStatusText.textContent = "\u0E14\u0E32\u0E27\u0E19\u0E4C\u0E42\u0E2B\u0E25\u0E14\u0E40\u0E2A\u0E23\u0E47\u0E08\u0E2A\u0E21\u0E1A\u0E39\u0E23\u0E13\u0E4C! \u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E15\u0E34\u0E14\u0E15\u0E31\u0E49\u0E07";
+      elBtnUpdateDownload.classList.add("hidden");
+      elBtnUpdateRestart.classList.remove("hidden");
+    });
+    elBtnUpdateRestart.addEventListener("click", () => {
+      elBtnUpdateRestart.disabled = true;
+      elBtnUpdateRestart.textContent = "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E23\u0E35\u0E2A\u0E15\u0E32\u0E23\u0E4C\u0E17...";
+      api.installUpdate();
+    });
+    elBtnUpdateDismiss.addEventListener("click", hideUpdateModal);
+    elBtnUpdateClose.addEventListener("click", hideUpdateModal);
+    api.onUpdateError((err) => {
+      elProgressStatusText.textContent = `\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14: ${err.message}`;
+      elBtnUpdateDownload.disabled = false;
+      elBtnUpdateDownload.textContent = "\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07";
+    });
+    api.checkForUpdate();
+  }
   function init() {
     renderHistory();
     renderStats();
@@ -109,6 +173,7 @@
       setStatus("on");
       elTitle.textContent = "KeyPress Overlay";
       api.onKeyEvent(onEvent);
+      setupUpdaterUI(api);
     } else {
       setStatus("off");
       elTitle.textContent = "KeyPress Overlay (no Electron)";
