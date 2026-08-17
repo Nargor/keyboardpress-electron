@@ -1,6 +1,6 @@
 {
   "name": "keypress-overlay",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Transparent window overlay that shows your keyboard presses — for OBS / streaming.",
   "main": "electron/main.js",
