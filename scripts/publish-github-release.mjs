@@ -169,20 +169,37 @@ async function main() {
     }
 
     console.log(`  uploading ${name} (${(size / 1024 / 1024).toFixed(1)} MB)...`)
-    const upRes = await fetch(
-      `https://uploads.github.com/repos/${owner}/${repo}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`,
-      {
+    
+    let uploadUrl = `https://uploads.github.com/repos/${owner}/${repo}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`
+    let uploadHeaders = {
+      ...H,
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': String(size)
+    }
+    const fileBody = readFileSync(path)
+    let upRes = null
+
+    for (let hop = 0; hop < 5; hop++) {
+      upRes = await fetch(uploadUrl, {
         method: 'POST',
-        headers: {
-          ...H,
-          'Content-Type': 'application/octet-stream',
-          'Content-Length': String(size)
-        },
-        body: readFileSync(path)
+        headers: uploadHeaders,
+        body: fileBody,
+        redirect: 'manual'
+      })
+
+      if (upRes.status >= 300 && upRes.status < 400 && upRes.headers.get('location')) {
+        uploadUrl = upRes.headers.get('location')
+        // Strip Authorization header when redirected to S3 / external storage to prevent header conflict
+        if (uploadUrl.includes('githubusercontent.com') || uploadUrl.includes('amazonaws.com')) {
+          delete uploadHeaders['Authorization']
+        }
+        continue
       }
-    )
-    if (!upRes.ok)
-      fail(`Upload of ${name} failed: ${upRes.status} ${(await upRes.text()).slice(0, 300)}`)
+      break
+    }
+
+    if (!upRes || !upRes.ok)
+      fail(`Upload of ${name} failed: ${upRes?.status} ${(await upRes?.text())?.slice(0, 300)}`)
   }
 
   const final = await (
