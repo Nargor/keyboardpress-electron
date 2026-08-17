@@ -15,48 +15,144 @@ on:
           - win-linux
 
 jobs:
-  build:
-    name: Build ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: windows
-            platform: win
-            os: windows-latest
-            script: build:win
-          - name: linux
-            platform: linux
-            os: ubuntu-latest
-            script: build:linux
-
+  # ── Windows: build → sign → stage ──────────────────────────────────────────
+  build-win:
+    name: Build & Sign (Windows)
+    runs-on: windows-latest
+    if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == 'win' || github.event.inputs.target == 'win-linux' }}
     steps:
       - uses: actions/checkout@v4
-        if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux')) }}
 
       - uses: actions/setup-node@v4
-        if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux')) }}
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (Windows)
+        run: npm run build:win
+
+      # ── Sign with SignPath ──────────────────────────────────────────────────
+      - name: Sign executable via SignPath
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORG_ID:    ${{ secrets.SIGNPATH_ORG_ID }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          # Locate the unsigned .exe in release/
+          $exePath = Get-ChildItem release -Filter '*.exe' | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $exePath) { throw 'No .exe found in release/ — build may have failed.' }
+          Write-Host "Signing: $exePath"
+
+          $baseUrl = "https://app.signpath.io/API/v1/$env:SIGNPATH_ORG_ID"
+          $headers = @{ Authorization = "Bearer $env:SIGNPATH_API_TOKEN" }
+
+          # Submit signing request (multipart/form-data)
+          $form = @{
+            projectSlug       = 'keyboardpress'
+            signingPolicySlug = 'release-policy'
+            artifact          = Get-Item $exePath
+          }
+          $submitResp = Invoke-RestMethod "$baseUrl/SigningRequests/SubmitWithArtifact" `
+            -Method Post -Headers $headers -Form $form
+          $requestId = $submitResp.signingRequestId
+          Write-Host "SignPath request ID: $requestId"
+
+          # Poll until completed / failed (max 10 min)
+          $deadline = (Get-Date).AddMinutes(10)
+          do {
+            Start-Sleep -Seconds 15
+            $status = (Invoke-RestMethod "$baseUrl/SigningRequests/$requestId" -Headers $headers).status
+            Write-Host "  status: $status"
+            if ($status -eq 'Completed')  { break }
+            if ($status -eq 'Failed' -or $status -eq 'Denied' -or $status -eq 'Canceled') {
+              throw "Signing request $requestId ended with status: $status"
+            }
+          } while ((Get-Date) -lt $deadline)
+
+          if ($status -ne 'Completed') { throw 'Signing timed out after 10 minutes.' }
+
+          # Download signed artifact (overwrites the unsigned exe in-place)
+          Invoke-WebRequest "$baseUrl/SigningRequests/$requestId/SignedArtifact" `
+            -Headers $headers -OutFile $exePath
+          Write-Host "Signed artifact saved to: $exePath"
+
+      - name: Upload Windows release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-win
+          path: release/
+          retention-days: 1
+
+  # ── Linux: build only (no exe signing needed) ──────────────────────────────
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == 'linux' || github.event.inputs.target == 'win-linux' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
       - name: Install system dependencies (Linux)
-        if: ${{ matrix.platform == 'linux' && (github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux'))) }}
         run: |
           sudo apt-get update
           sudo apt-get install -y libfuse2 || sudo apt-get install -y libfuse2t64
 
       - name: Install dependencies
-        if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux')) }}
         run: npm ci
 
-      - name: Build
-        if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux')) }}
-        run: npm run ${{ matrix.script }}
+      - name: Build (Linux)
+        run: npm run build:linux
+
+      - name: Upload Linux release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: release/
+          retention-days: 1
+
+  # ── Publish: collect all artifacts → one GitHub Release ────────────────────
+  publish:
+    name: Publish to GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-win, build-linux]
+    # Run publish if at least one build succeeded (others may be skipped)
+    if: ${{ always() && (needs.build-win.result == 'success' || needs.build-linux.result == 'success') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download Windows artifacts
+        if: ${{ needs.build-win.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: release-win
+          path: release/
+
+      - name: Download Linux artifacts
+        if: ${{ needs.build-linux.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: release-linux
+          path: release/
 
       - name: Publish to GitHub Release
-        if: ${{ github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == matrix.platform || (github.event.inputs.target == 'win-linux' && (matrix.platform == 'win' || matrix.platform == 'linux')) }}
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: node scripts/publish-github-release.mjs
+

@@ -2,7 +2,17 @@
 
 บันทึกการเปลี่ยนแปลงของแอป KeyPress Overlay แต่ละเวอร์ชัน (เรียงจากใหม่ไปเก่า)
 
+## [1.1.0] - ยังไม่ release
+
+### เพิ่มใหม่
+- 🔲 **ปรับขนาดหน้าต่างได้** — เปิด `resizable: true` บน BrowserWindow ให้ลากขอบหน้าต่างปรับขนาดได้ตามใจชอบ (ขั้นต่ำ 320×220)
+  - ฟอนต์ key chip และ stat value ใช้ `clamp()` สเกลตามขนาดหน้าต่างโดยอัตโนมัติ — ไม่ overflow เมื่อหน้าต่างเล็ก, ไม่ดูเล็กเกินไปเมื่อหน้าต่างใหญ่
+- 🔏 **Code signing (Windows exe)** — Release pipeline ส่ง exe ไป sign ผ่าน SignPath API อัตโนมัติก่อน publish ขึ้น GitHub Releases ช่วยให้ Windows ไม่ขึ้น SmartScreen warning
+
+---
+
 ## [1.0.0] - 2026-08-17
+
 
 ### เพิ่มใหม่
 - ⌨️ **KeyPress Overlay แอปตัวแรก** — หน้าต่างโปร่งใสขนาดเล็กโชว์ปุ่มที่กดบนคีย์บอร์ด เอาไปใส่ในโปรแกรมไลฟ์ (OBS, Twitch Studio ฯลฯ)

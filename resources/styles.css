@@ -121,12 +121,12 @@ body {
 }
 
 .keychip {
-  padding: 7px 14px;
+  padding: clamp(4px, 1.2vh, 10px) clamp(8px, 2vw, 18px);
   border-radius: 9px;
   background: #1a2132;
   border: 1px solid #2c3650;
   color: #dfe6f8;
-  font: 600 22px/1.2 "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
+  font: 600 clamp(13px, 4vw, 24px)/1.2 "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: transform 0.12s;
 }
@@ -211,7 +211,7 @@ body {
 }
 
 .stat-value {
-  font: 700 20px/1.1 "Cascadia Mono", "Consolas", monospace;
+  font: 700 clamp(14px, 3.5vw, 22px)/1.1 "Cascadia Mono", "Consolas", monospace;
   color: #f2f5ff;
 }
 
