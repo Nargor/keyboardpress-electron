@@ -68,7 +68,7 @@
     "publish": {
       "provider": "github",
       "owner": "Nargor",
-      "repo": "keyboardpress-electron",
+      "repo": "keypress-overlay-electron",
       "releaseType": "release",
       "vPrefixedTagName": true
     }
